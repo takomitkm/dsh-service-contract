@@ -40,8 +40,11 @@ declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }
 - `fetch_dsh_src.py` — 下载 rc.1 源码树（codeload 全量 tarball）。
 - `extract_typert.mjs` — Layer B Typert 端点抽取。
 - `extract_layerc.py` — Layer C Cordis `ctx.*` 抽取（声明合并 + asar 交叉核对）。
+- `survey_layerc.py` — Layer C 覆盖度 survey（按取源口径统计声明键/签名/asar 交叉核对命中）。
 - `build_contract.py` — 汇编成 `contract.json` + `dsh-service-contract.md`。
 - `validate_contract.py` — 校验交付物（键/覆盖度/标记/陈旧占位符）。
+- `layerc-contract.json` — Layer C 预构建中间产物（`extract_layerc.py` 输出、`build_contract.py` 输入）。可选：导入即可直接 `build_contract.py`，免跑 extractor。
+- `setup_repo.py` — 本地建仓辅助（把交付物与脚本拷到干净目录供 `git init` + `gh repo create`）。
 
 ## 重新生成
 
