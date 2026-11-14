@@ -1,0 +1,4 @@
+# 不提交本地巨量源码树 / 临时产物
+.tmp/
+*.tar.gz
+node_modules/
