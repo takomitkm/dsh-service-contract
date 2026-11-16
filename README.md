@@ -2,6 +2,8 @@
 
 DSH（DeepSeek Harness）插件实际依赖的**服务面契约**。
 
+more completed ver. ---- PerryLink/dsh-plugin-guide
+
 ## 背景
 
 DSH 侧没有正式的服务面 spec。要把一个 DSH 插件"一模一样"地对接，得先把它实际依赖的
