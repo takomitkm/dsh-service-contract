@@ -36,6 +36,13 @@ if VER == "0.2.2-rc.1":
     TREE = os.path.join(TMP, "dsh-asar-full")     # original rc.1 extraction
     SRC_TREE = os.path.join(TMP, "dsh-src")
 
+# Wording for the Layer C cross-check source (what the compiled .js came from).
+CHECK_SRC = {
+    "0.2.2-rc.1": "本地 asar 解包树",
+    "0.2.2-rc.3": "本机安装的 DSH 桌面 app.asar 解包树",
+    "0.2.2-rc.5": "npm 发布的 rc.5 包树（桌面包集的子集）",
+}[VER]
+
 os.makedirs(OUT_DIR, exist_ok=True)
 ty = json.load(open(TYPERT_IN, encoding="utf-8"))
 layerc = json.load(open(LAYERC_IN, encoding="utf-8"))
@@ -147,14 +154,23 @@ contract = {
         "dshVersion": VER,
         "sourceTag": TAG,
         "sourceCommit": SHA,
-        "sourceAsar": r"C:\Users\takomi\AppData\Local\Programs\DeepSeek Harness\resources\app.asar" if VER == "0.2.2-rc.3" else "(upstream tag; not the installed desktop build)",
+        "sourceAsar": {
+            "0.2.2-rc.1": r"C:\Users\takomi\AppData\Local\Programs\DeepSeek Harness\resources\app.asar",
+            "0.2.2-rc.3": r"C:\Users\takomi\AppData\Local\Programs\DeepSeek Harness\resources\app.asar",
+            "0.2.2-rc.5": "npm registry: 39 x @deepseek-ai/*@0.2.2-rc.5 packages (lib/typert.remote-client.js each; no desktop build exists for this tag)",
+        }[VER],
         "extractedTree": TREE,
+        "crossCheckTree": {
+            "0.2.2-rc.1": "local installed app.asar extraction (dsh-asar-full)",
+            "0.2.2-rc.3": "local installed app.asar extraction (@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.3)",
+            "0.2.2-rc.5": "npm-published rc.5 packages (subset of the desktop runtime package set)",
+        }[VER],
         "layers": {
             "A_sdk_jsonrpc": "Explicit documented wire protocol (README) — external client / forwarder path.",
             "B_typert_remote": f"Host<->Client Remote endpoints; JSON Schemas recovered from generated lib/typert.remote-client.js ({typert['summary']['packages']} packages / {typert['summary']['endpoints']} endpoints, 0 extraction errors).",
-            "C_cordis_ctx": f"In-process Cordis ctx.* service surface — TYPED/SOURCED from the official repo TypeScript at tag {TAG}, cross-checked against the {'local asar' if VER == '0.2.2-rc.3' else 'rc.3 asar'} compiled .js ({layerc['coverage']['productionKeys']} production keys / {layerc['coverage']['methodSignatures']} methods / {layerc['coverage']['asarConfirmed']} asar-confirmed).",
+            "C_cordis_ctx": f"In-process Cordis ctx.* service surface — TYPED/SOURCED from the official repo TypeScript at tag {TAG}, cross-checked against the {'local asar (rc.1 extraction tree)' if VER == '0.2.2-rc.1' else 'local asar (installed 0.2.2-rc.3 desktop build)' if VER == '0.2.2-rc.3' else 'npm-published rc.5 packages'} compiled .js ({layerc['coverage']['productionKeys']} production keys / {layerc['coverage']['methodSignatures']} methods / {layerc['coverage']['asarConfirmed']} cross-check-confirmed).",
         },
-        "honesty": "Layer B schemas are exact (generated from the Host FaceModel). Layer A payload field shapes are transcribed from the protocol README because TS types are erased in shipped .js. Layer C is typed/sourced from the official repo .ts at the locked tag (NOT reverse-engineered): npm ships no .ts source and the same-package .d.ts is absent from the local asar, so each key's provider type is read from the public TypeScript and the runtime registration is cross-checked against the local asar .js.",
+        "honesty": "Layer B schemas are exact (generated from the Host FaceModel). Layer A payload field shapes are transcribed from the protocol README because TS types are erased in shipped .js. Layer C is typed/sourced from the official repo .ts at the locked tag (NOT reverse-engineered): npm ships no .ts source and the same-package .d.ts is absent from the shipped packages, so each key's provider type is read from the public TypeScript and the runtime registration is cross-checked against the shipped .js (" + ("local asar" if VER in ("0.2.2-rc.1", "0.2.2-rc.3") else "npm-published rc.5 packages, a subset of the desktop package set, so fewer keys confirm") + ").",
     },
     "layerA_sdk_jsonrpc": sdk,
     "layerB_typert_remote": typert,
@@ -187,7 +203,8 @@ w("> 本文把它抽出来。")
 w("")
 w("- **DSH 版本**：`%s`（tag `%s`，commit `%s`）" % (VER, TAG, SHA))
 w("- **来源 archive**：`%s`" % contract["meta"]["sourceAsar"])
-w("- **解包树**：`%s`（%d 文件）" % (TREE, sum(len(f) for _, _, f in os.walk(TREE))))
+w("- **产物树（Layer B 取源 + Layer C 交叉核对）**：`%s`（%d 文件）" % (TREE, sum(len(f) for _, _, f in os.walk(TREE))))
+w("- **交叉核对来源**：%s" % contract["meta"]["crossCheckTree"])
 w("- **生成时间**：%s" % contract["meta"]["generatedAt"])
 w("- **机器可读版**：同目录 `contract.json`")
 w("")
@@ -324,12 +341,12 @@ w("# Layer C — 进程内 Cordis `ctx.*` 服务面")
 w("")
 w("> **来源**：`deepseek-ai/deepseek-harness` 在 tag `%s`（commit `%s`）的公开 TypeScript 源码。" % (TAG, SHA))
 w("> 用 `extract_layerc.py` 从 `%s` 的 `packages/**` + `vendor/**` 的 `.ts` 抽取" % SRC_TREE)
-w("> （%d 个 `.ts` 文件），并交叉核对本地 asar 的编译后 `.js`（%d 个 `.js` 文件）。" % (
-    layerc["meta"]["sourceTreeFileCount"], layerc["meta"]["asarJsFiles"]))
+w("> （%d 个 `.ts` 文件），并交叉核对%s的编译后 `.js`（%d 个 `.js` 文件）。" % (
+    layerc["meta"]["sourceTreeFileCount"], CHECK_SRC, layerc["meta"]["asarJsFiles"]))
 w(">")
-w("> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失；" )
+w("> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失；" )
 w("> Layer C 的每个服务键的提供类型直接读公开仓库的 `.ts` 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`），")
-w("> 运行期注册再拿本地 asar 的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。")
+w("> 运行期注册再拿%s的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。" % CHECK_SRC)
 w("")
 w("## C.1 机制（类型化声明合并，非反推）")
 w("")
@@ -345,7 +362,7 @@ cov = layerc["coverage"]
 w("- 生产服务键：**%d** 个；测试夹具里声明的键（非生产）：**%d** 个。" % (cov["productionKeys"], cov["testOnlyKeys"]))
 w("- 有提供方的：%d；有消费方的：%d。" % (cov["withProvider"], cov["withConsumers"]))
 w("- 方法签名：解析出 **%d** 个服务、共 **%d** 个方法。" % (cov["methodsResolved"], cov["methodSignatures"]))
-w("- asar 交叉核对：%d / %d 个生产键在本地 asar `.js` 里可见。" % (cov["asarConfirmed"], cov["productionKeys"]))
+w("- 交叉核对（%s）：%d / %d 个生产键在编译后 `.js` 里可见。" % (CHECK_SRC, cov["asarConfirmed"], cov["productionKeys"]))
 w("")
 w("## C.3 服务目录（生产键，%d 行）" % cov["productionKeys"])
 w("")
@@ -400,8 +417,8 @@ w("- **Layer A 的 payload 字段形状是转录的**：随包 `.js` 里 TS 类�
 w("- **Layer B 返回 schema 有 %d 个缺失**：官方生成器对 `void` 结果和字典/union 类型报 `jsonSchemaError`（%s），这些 endpoint 只保留 `typeSymbol`+`description`，原因已逐个写在上文条目里。入参 schema 则完整。" % (
     typert["summary"]["resultSchemaMissing"],
     "；".join("%s×%d" % (k, v) for k, v in typert["summary"]["resultSchemaMissingReasons"].items())))
-w("- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `%s` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用本地 asar 编译后 `.js` 交叉核对（%d/%d 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。" % (
-    TAG, cov["asarConfirmed"], cov["productionKeys"]))
+w("- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `%s` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用%s编译后 `.js` 交叉核对（%d/%d 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。" % (
+    TAG, CHECK_SRC, cov["asarConfirmed"], cov["productionKeys"]))
 w("- **未覆盖**：协议版本协商（DSH 明说没有）；cancel/session-close（DSH 明说没有）。Layer C 的方法签名来自 `.ts` 源码解析，个别生成器未导出的运行期动态方法可能未列全。")
 w("")
 
