@@ -5,9 +5,10 @@
 > 本文把它抽出来。
 
 - **DSH 版本**：`0.2.2-rc.5`（tag `dsh-v0.2.2-rc.5`，commit `9c2670d3bce5275e0d1610272958121af87787bb`）
-- **来源 archive**：`(upstream tag; not the installed desktop build)`
-- **解包树**：`S:\apps\llm\agentwork\.tmp\dsh-asar-0.2.2-rc.5`（3214 文件）
-- **生成时间**：2026-11-19T23:47:43.708542+00:00
+- **来源 archive**：`npm registry: 39 x @deepseek-ai/*@0.2.2-rc.5 packages (lib/typert.remote-client.js each; no desktop build exists for this tag)`
+- **产物树（Layer B 取源 + Layer C 交叉核对）**：`S:\apps\llm\agentwork\.tmp\dsh-asar-0.2.2-rc.5`（3214 文件）
+- **交叉核对来源**：npm-published rc.5 packages (subset of the desktop runtime package set)
+- **生成时间**：2026-11-20T15:48:23.264758+00:00
 - **机器可读版**：同目录 `contract.json`
 
 ## 三层服务面（本契约覆盖 A、B、C）
@@ -2259,11 +2260,11 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 
 > **来源**：`deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.5`（commit `9c2670d3bce5275e0d1610272958121af87787bb`）的公开 TypeScript 源码。
 > 用 `extract_layerc.py` 从 `S:\apps\llm\agentwork\.tmp\dsh-src-0.2.2-rc.5` 的 `packages/**` + `vendor/**` 的 `.ts` 抽取
-> （5888 个 `.ts` 文件），并交叉核对本地 asar 的编译后 `.js`（406 个 `.js` 文件）。
+> （5888 个 `.ts` 文件），并交叉核对npm 发布的 rc.5 包树（桌面包集的子集）的编译后 `.js`（406 个 `.js` 文件）。
 >
-> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失；
+> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失；
 > Layer C 的每个服务键的提供类型直接读公开仓库的 `.ts` 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`），
-> 运行期注册再拿本地 asar 的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。
+> 运行期注册再拿npm 发布的 rc.5 包树（桌面包集的子集）的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。
 
 ## C.1 机制（类型化声明合并，非反推）
 
@@ -2278,7 +2279,7 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 - 生产服务键：**151** 个；测试夹具里声明的键（非生产）：**14** 个。
 - 有提供方的：141；有消费方的：112。
 - 方法签名：解析出 **131** 个服务、共 **1367** 个方法。
-- asar 交叉核对：80 / 151 个生产键在本地 asar `.js` 里可见。
+- 交叉核对（npm 发布的 rc.5 包树（桌面包集的子集））：80 / 151 个生产键在编译后 `.js` 里可见。
 
 ## C.3 服务目录（生产键，151 行）
 
@@ -5129,6 +5130,6 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 - **Layer B schemas 是精确的**：不是猜的，是 `dsh-typert-generator` 从 Host FaceModel 生成后落进 `typert.remote-client.js` 的 `jsonSchema`（含 `typeSymbol` 与 `sourceLocation` 指回原始 `.ts` 路径/行/列，可反向核对）。
 - **Layer A 的 payload 字段形状是转录的**：随包 `.js` 里 TS 类型已抹除、`.d.ts` 未随包发，字段形状按协议 README 正文逐条抄录，可能比真实类型宽松（README 是权威描述，但不是可机读 schema）。
 - **Layer B 返回 schema 有 68 个缺失**：官方生成器对 `void` 结果和字典/union 类型报 `jsonSchemaError`（void 结果（无返回体）×31；字典/union 类型（生成器无法表达为 JSON Schema）×26；typert tool schema: unsupported undefined value×3；typert tool schema: selected union branches overlap or have no required discriminator×6；typert tool schema: unsupported selected reference Uint8Array×2），这些 endpoint 只保留 `typeSymbol`+`description`，原因已逐个写在上文条目里。入参 schema 则完整。
-- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.5` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用本地 asar 编译后 `.js` 交叉核对（80/151 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。
+- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.5` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用npm 发布的 rc.5 包树（桌面包集的子集）编译后 `.js` 交叉核对（80/151 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。
 - **未覆盖**：协议版本协商（DSH 明说没有）；cancel/session-close（DSH 明说没有）。Layer C 的方法签名来自 `.ts` 源码解析，个别生成器未导出的运行期动态方法可能未列全。
 
