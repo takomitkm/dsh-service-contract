@@ -15,13 +15,40 @@ DSH 侧没有正式的服务面 spec。要把一个 DSH 插件"一模一样"地�
 | 层 | 服务面 | 取源 | 覆盖范围 |
 |---|---|---|---|
 | A | SDK JSON-RPC | `dsh-sdk-protocol` 的 README | 16 方法（8 client→server + 8 server→client） |
-| B | Typert Remote（Host↔Client RPC） | 由 Host FaceModel 生成器产出 | 38 服务 / 193 端点 / 全 `direct` 调用 |
-| C | 进程内 Cordis `ctx.*` | `deepseek-ai/deepseek-harness` @ `dsh-v0.2.2-rc.1` 公开 `.ts` | 148 生产键 / 1284 方法签名 |
+| B | Typert Remote（Host↔Client RPC） | 由 Host FaceModel 生成器产出 | 43 服务 / 224 端点 / 全 `direct` 调用 |
+| C | 进程内 Cordis `ctx.*` | `deepseek-ai/deepseek-harness` @ 对应 tag 的公开 `.ts` | 151 生产键 / 1367 方法签名 |
+
+（覆盖范围数字对 **`dsh-v0.2.2-rc.5`** 分支；其余分支见下表。）
+
+## 版本分支（每 tag 一支）
+
+| 分支 | DSH 版本 | Layer B 端点 | Layer C 键/签名 | 取源 commit | 说明 |
+|---|---|---|---|---|---|
+| `dsh-v0.2.2-rc.1` | 0.2.2-rc.1 | 34 包 / 193 | 148 / 1284 | `66491b05` | 契约首发（本机当时桌面版） |
+| `dsh-v0.2.2-rc.3` | 0.2.2-rc.3 | 39 包 / 224 | 151 / 1367 | `38a6a5c9` | 本机现装桌面版（asar 解包取 Layer B） |
+| `dsh-v0.2.2-rc.5` | 0.2.2-rc.5 | 39 包 / 224 | 151 / 1367 | `9c2670d3` | 上游最新 tag（npm 发布包取 Layer B；默认分支） |
+
+**rc.1 → rc.3 面变化**：Layer B +45/−14 端点（account 域从 `dsh-api-account-controller`
+迁到 `dsh-deepseek-account`，`dsh-office-to-pdf` 并入 `dsh-office-kit`；新增 `dsh-agent-team`、
+`dsh-cua`、`dsh-mcp-manager`、`dsh-web` 等 7 包）；179 个共有端点里 24 个 payload 形状有变；
+Layer C +4 键（`accountUi`/`deepseekChatImport`/`mcpManager`/`officeKit`）、−1 键（`officeToPdf`），
+19 个共有键的方法签名有变化。
+
+**rc.3 → rc.5 面变化**：Layer B 完全一致（0 增删、0 形状变化）；Layer C 仅
+`web.selectSearchProvider` 增加一个 `llmProvider` 参数。
 
 ## 取源版本（锁定）
 
-全部基于 tag **`dsh-v0.2.2-rc.1`**（commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`），
-即本机正运行的 DSH 桌面 `0.2.2-rc.1`。**未用** `master`、也未用 `rc.2`/`rc.3`/`alpha` 等其它标签。
+- `dsh-v0.2.2-rc.1` 分支：tag **`dsh-v0.2.2-rc.1`**（commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`），
+  Layer B 取自本机当时安装的桌面 `app.asar` 解包（`@deepseek-ai/dsh-desktop 0.2.2-rc.1`）。
+- `dsh-v0.2.2-rc.3` 分支：tag **`dsh-v0.2.2-rc.3`**（commit `38a6a5c965aa99ab525161efb7cc5cf1fe62fced`），
+  Layer B 取自本机安装的桌面 `app.asar` 解包（`@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.3`）。
+- `dsh-v0.2.2-rc.5` 分支：tag **`dsh-v0.2.2-rc.5`**（commit `9c2670d3bce5275e0d1610272958121af87787bb`）。
+  该 tag 没有桌面安装包，Layer B 取自 npm 发布的 39 个 `@deepseek-ai/*@0.2.2-rc.5` 包；
+  这组包是桌面运行时的**子集**，所以 Layer C 的 `.js` 交叉核对只命中 80/151（桌面 asar 为 114/151），属预期差异。
+
+各分支的 `contract.json` 顶部 `meta.dshVersion` / `meta.sourceTag` / `meta.sourceCommit` /
+`meta.sourceAsar` / `meta.crossCheckTree` 是权威声明（取源与交叉核对各是什么，逐版本写明）。
 
 ## Layer C 是类型化抽取，不是反推
 
@@ -50,18 +77,21 @@ declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }
 
 ## 重新生成
 
+脚本已按 tag 参数化（`build_contract_v2.py <tag>` / `extract_layerc.py <tag>`）。
+以 rc.5 为例：
+
 ```powershell
-# 1) 拉 rc.1 源码（首次）
+# 1) 拉对应 tag 源码树（Layer C 用；fetch_dsh_src.py 里的 TAG 改成目标 tag）
 & python.exe fetch_dsh_src.py
 
-# 2) 抽 Layer B（Node ESM）
-node extract_typert.mjs <@deepseek-ai 目录> typert-contract.json
+# 2) 抽 Layer B（Node ESM；对桌面版 asar 解包树，或 npm 发布包拼的 node_modules 树）
+node extract_typert.mjs <@deepseek-ai 目录> ..\.tmp\typert-contract-<ver>.json
 
-# 3) 抽 Layer C（读本地源码树 + asar）
-& python.exe extract_layerc.py
+# 3) 抽 Layer C（读本地源码树 + asar/npm 包树）
+& python.exe extract_layerc.py dsh-v0.2.2-rc.5
 
-# 4) 组装
-& python.exe build_contract.py
+# 4) 组装（输出到 ..\.tmp\contract-out\<tag>\）
+& python.exe build_contract_v2.py dsh-v0.2.2-rc.5
 
 # 5) 校验
 & python.exe validate_contract.py
