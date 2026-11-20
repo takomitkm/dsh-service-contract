@@ -4,10 +4,11 @@
 > 用于「一模一样」复刻 / 反代 / 外部客户端对接。DSH 没有一份统一的对外 spec 文档，但真实契约分散在源码里，
 > 本文把它抽出来。
 
-- **DSH 版本**：`0.2.2-rc.1`
+- **DSH 版本**：`0.2.2-rc.1`（tag `dsh-v0.2.2-rc.1`，commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`）
 - **来源 archive**：`C:\Users\takomi\AppData\Local\Programs\DeepSeek Harness\resources\app.asar`
-- **解包树**：`S:\apps\llm\agentwork\.tmp\dsh-asar-full`（22102 文件，与当前 asar 文件数一致）
-- **生成时间**：2026-11-14T03:40:29.988647+00:00
+- **产物树（Layer B 取源 + Layer C 交叉核对）**：`S:\apps\llm\agentwork\.tmp\dsh-asar-full`（22102 文件）
+- **交叉核对来源**：local installed app.asar extraction (dsh-asar-full)
+- **生成时间**：2026-11-20T15:50:12.838136+00:00
 - **机器可读版**：同目录 `contract.json`
 
 ## 三层服务面（本契约覆盖 A、B、C）
@@ -16,13 +17,13 @@
 |---|---|---|---|
 | **A. SDK / JSON-RPC** | 换行分帧的 JSON-RPC 2.0 线协议（外部客户端/反代走这条） | `dsh-sdk-client`(TS)、Python SDK、任何外部进程 | ✅ 已转录（协议 README） |
 | **B. Host↔Client Remote (Typert)** | 渲染端 ↔ 主进程的命名 RPC endpoint，每个方法带 JSON Schema | DSH 自己的 renderer / 任何调 Remote 的进程 | ✅ 机器导出（34 包 / 193 endpoint / 0 错） |
-| **C. 进程内 Cordis `ctx.*` 服务** | 插件在 host 进程内直接消费的服务对象 | cordis 插件包本身 | ✅ 类型化抽取（rc.1 `.ts` + asar `.js` 交叉核对） |
+| **C. 进程内 Cordis `ctx.*` 服务** | 插件在 host 进程内直接消费的服务对象 | cordis 插件包本身 | ✅ 类型化抽取（dsh-v0.2.2-rc.1 `.ts` + asar `.js` 交叉核对） |
 
 ---
 
 # Layer A — SDK / JSON-RPC 协议
 
-来源：`dsh-sdk-protocol/README.md (152 lines) + lib/index.js (transport only; types erased).`。
+来源：`dsh-sdk-protocol/README.md (shipped in asar) + lib/index.js (transport only; types erased).`。
 
 ## A.1 传输与分帧
 
@@ -1968,11 +1969,11 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 
 > **来源**：`deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.1`（commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`）的公开 TypeScript 源码。
 > 用 `extract_layerc.py` 从 `S:\apps\llm\agentwork\.tmp\dsh-src` 的 `packages/**` + `vendor/**` 的 `.ts` 抽取
-> （5621 个 `.ts` 文件），并交叉核对本地 asar 的编译后 `.js`（2071 个 `.js` 文件）。
+> （5621 个 `.ts` 文件），并交叉核对本地 asar 解包树的编译后 `.js`（2071 个 `.js` 文件）。
 >
-> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失；
+> **不是反推**：npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失；
 > Layer C 的每个服务键的提供类型直接读公开仓库的 `.ts` 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`），
-> 运行期注册再拿本地 asar 的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。
+> 运行期注册再拿本地 asar 解包树的 `.js` 交叉核对。npm 上的 `.d.ts` 仅作参考。
 
 ## C.1 机制（类型化声明合并，非反推）
 
@@ -1987,7 +1988,7 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 - 生产服务键：**148** 个；测试夹具里声明的键（非生产）：**14** 个。
 - 有提供方的：138；有消费方的：109。
 - 方法签名：解析出 **130** 个服务、共 **1284** 个方法。
-- asar 交叉核对：135 / 148 个生产键在本地 asar `.js` 里可见。
+- 交叉核对（本地 asar 解包树）：135 / 148 个生产键在编译后 `.js` 里可见。
 
 ## C.3 服务目录（生产键，148 行）
 
@@ -4724,6 +4725,6 @@ _TypeScript types are erased in shipped .js; these shapes are transcribed verbat
 - **Layer B schemas 是精确的**：不是猜的，是 `dsh-typert-generator` 从 Host FaceModel 生成后落进 `typert.remote-client.js` 的 `jsonSchema`（含 `typeSymbol` 与 `sourceLocation` 指回原始 `.ts` 路径/行/列，可反向核对）。
 - **Layer A 的 payload 字段形状是转录的**：随包 `.js` 里 TS 类型已抹除、`.d.ts` 未随包发，字段形状按协议 README 正文逐条抄录，可能比真实类型宽松（README 是权威描述，但不是可机读 schema）。
 - **Layer B 返回 schema 有 54 个缺失**：官方生成器对 `void` 结果和字典/union 类型报 `jsonSchemaError`（字典/union 类型（生成器无法表达为 JSON Schema）×22；void 结果（无返回体）×21；typert tool schema: unsupported undefined value×3；typert tool schema: selected union branches overlap or have no required discriminator×6；typert tool schema: unsupported selected reference Uint8Array×2），这些 endpoint 只保留 `typeSymbol`+`description`，原因已逐个写在上文条目里。入参 schema 则完整。
-- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.1` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在本地 asar 里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用本地 asar 编译后 `.js` 交叉核对（135/148 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。
+- **Layer C 是类型化抽取，不是反推**：服务键的提供类型直接读公开仓库 `deepseek-ai/deepseek-harness` 在 tag `dsh-v0.2.2-rc.1` 的 TypeScript 声明合并（`declare module '@deepseek-ai/cordis' { interface Context { <key>: <Type> } }`）。npm 不发 `.ts` 源码、同一包的 `.d.ts` 在随包产物里也缺失，所以并非从 `.js` 反推；运行期注册（`ctx.provide` / `ctx.reflect.provide` / `static inject`）再用本地 asar 解包树编译后 `.js` 交叉核对（135/148 生产键可见）。npm 上的 `.d.ts` 仅作独立参考。
 - **未覆盖**：协议版本协商（DSH 明说没有）；cancel/session-close（DSH 明说没有）。Layer C 的方法签名来自 `.ts` 源码解析，个别生成器未导出的运行期动态方法可能未列全。
 
