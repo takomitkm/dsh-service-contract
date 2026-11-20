@@ -1,18 +1,19 @@
 {
   "meta": {
     "title": "DSH plugin-service-surface contract",
-    "generatedAt": "2026-11-19T22:46:07.704486+00:00",
+    "generatedAt": "2026-11-20T15:49:17.912107+00:00",
     "dshVersion": "0.2.2-rc.3",
     "sourceTag": "dsh-v0.2.2-rc.3",
     "sourceCommit": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
     "sourceAsar": "C:\\Users\\takomi\\AppData\\Local\\Programs\\DeepSeek Harness\\resources\\app.asar",
     "extractedTree": "S:\\apps\\llm\\agentwork\\.tmp\\dsh-asar-0.2.2-rc.3",
+    "crossCheckTree": "local installed app.asar extraction (@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.3)",
     "layers": {
       "A_sdk_jsonrpc": "Explicit documented wire protocol (README) — external client / forwarder path.",
       "B_typert_remote": "Host<->Client Remote endpoints; JSON Schemas recovered from generated lib/typert.remote-client.js (39 packages / 224 endpoints, 0 extraction errors).",
-      "C_cordis_ctx": "In-process Cordis ctx.* service surface — TYPED/SOURCED from the official repo TypeScript at tag dsh-v0.2.2-rc.3, cross-checked against the local asar compiled .js (151 production keys / 1367 methods / 114 asar-confirmed)."
+      "C_cordis_ctx": "In-process Cordis ctx.* service surface — TYPED/SOURCED from the official repo TypeScript at tag dsh-v0.2.2-rc.3, cross-checked against the local asar (installed 0.2.2-rc.3 desktop build) compiled .js (151 production keys / 1367 methods / 114 cross-check-confirmed)."
     },
-    "honesty": "Layer B schemas are exact (generated from the Host FaceModel). Layer A payload field shapes are transcribed from the protocol README because TS types are erased in shipped .js. Layer C is typed/sourced from the official repo .ts at the locked tag (NOT reverse-engineered): npm ships no .ts source and the same-package .d.ts is absent from the local asar, so each key's provider type is read from the public TypeScript and the runtime registration is cross-checked against the local asar .js."
+    "honesty": "Layer B schemas are exact (generated from the Host FaceModel). Layer A payload field shapes are transcribed from the protocol README because TS types are erased in shipped .js. Layer C is typed/sourced from the official repo .ts at the locked tag (NOT reverse-engineered): npm ships no .ts source and the same-package .d.ts is absent from the shipped packages, so each key's provider type is read from the public TypeScript and the runtime registration is cross-checked against the shipped .js (local asar)."
   },
   "layerA_sdk_jsonrpc": {
     "package": "@deepseek-ai/dsh-sdk-protocol",
