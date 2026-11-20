@@ -39,14 +39,16 @@ Layer C +4 键（`accountUi`/`deepseekChatImport`/`mcpManager`/`officeKit`）、
 
 ## 取源版本（锁定）
 
-- `dsh-v0.2.2-rc.1` 分支：tag **`dsh-v0.2.2-rc.1`**（commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`）。
+- `dsh-v0.2.2-rc.1` 分支：tag **`dsh-v0.2.2-rc.1`**（commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`），
+  Layer B 取自本机当时安装的桌面 `app.asar` 解包（`@deepseek-ai/dsh-desktop 0.2.2-rc.1`）。
 - `dsh-v0.2.2-rc.3` 分支：tag **`dsh-v0.2.2-rc.3`**（commit `38a6a5c965aa99ab525161efb7cc5cf1fe62fced`），
-  Layer B 取自本机安装的桌面 `app.asar` 解包（`@deepseek-ai/dsh-desktop 0.2.2-rc.3`）。
-- `dsh-v0.2.2-rc.5` 分支：tag **`dsh-v0.2.2-rc.5`**（commit `9c2670d3bce5275e0d1610272958121af87787bb`），
-  Layer B 取自 npm 发布的 39 个 `@deepseek-ai/*@0.2.2-rc.5` 包（npm 子集的 asar 交叉核对命中
-  80/151，低于桌面版 asar 的覆盖面，属预期）。
+  Layer B 取自本机安装的桌面 `app.asar` 解包（`@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.3`）。
+- `dsh-v0.2.2-rc.5` 分支：tag **`dsh-v0.2.2-rc.5`**（commit `9c2670d3bce5275e0d1610272958121af87787bb`）。
+  该 tag 没有桌面安装包，Layer B 取自 npm 发布的 39 个 `@deepseek-ai/*@0.2.2-rc.5` 包；
+  这组包是桌面运行时的**子集**，所以 Layer C 的 `.js` 交叉核对只命中 80/151（桌面 asar 为 114/151），属预期差异。
 
-各分支的 `contract.json` 顶部 `meta.dshVersion` / `meta.sourceTag` / `meta.sourceCommit` 是权威声明。
+各分支的 `contract.json` 顶部 `meta.dshVersion` / `meta.sourceTag` / `meta.sourceCommit` /
+`meta.sourceAsar` / `meta.crossCheckTree` 是权威声明（取源与交叉核对各是什么，逐版本写明）。
 
 ## Layer C 是类型化抽取，不是反推
 
